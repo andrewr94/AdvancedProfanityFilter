@@ -9,7 +9,7 @@ export default class Config {
   defaultWordSeparators: number;
   filterMethod: number;
   filterWordList: boolean;
-  iWordWhitelist: string[];
+  iWordAllowlist: string[];
   loggingLevel: number;
   preserveCase: boolean;
   preserveFirst: boolean;
@@ -17,15 +17,20 @@ export default class Config {
   showCounter: boolean;
   showSummary: boolean;
   substitutionMark: boolean;
+  wordAllowlist: string[];
   wordlistId: number;
   wordlists: string[];
   wordlistsEnabled: boolean;
   words: { [key: string]: WordOptions };
-  wordWhitelist: string[];
+  wordSubSeparator: string;
+
+  protected static initializeDefaults(...defaults) {
+    return Object.assign({}, this._configDefaults, ...defaults);
+  }
 
   static readonly _allWordlists = ['All words'];
 
-  static readonly _defaults = {
+  static readonly _configDefaults = {
     censorCharacter: '*',
     censorFixedLength: 0,
     defaultSubstitution: 'censored',
@@ -34,7 +39,7 @@ export default class Config {
     defaultWordSeparators: Constants.FALSE,
     filterMethod: Constants.FILTER_METHODS.SUBSTITUTE,
     filterWordList: true,
-    iWordWhitelist: [],
+    iWordAllowlist: [],
     loggingLevel: Constants.LOGGING_LEVELS.WARN,
     preserveCase: true,
     preserveFirst: true,
@@ -42,10 +47,12 @@ export default class Config {
     showCounter: true,
     showSummary: true,
     substitutionMark: false,
+    wordAllowlist: [],
     wordlistId: 0,
     wordlists: ['Wordlist 1', 'Wordlist 2', 'Wordlist 3', 'Wordlist 4', 'Wordlist 5', 'Wordlist 6'],
     wordlistsEnabled: true,
-    wordWhitelist: [],
+    words: undefined,
+    wordSubSeparator: ';;',
   };
 
   static readonly _defaultWords: { [key: string]: WordOptions } = {
@@ -82,8 +89,16 @@ export default class Config {
     'whore': { lists: [], matchMethod: Constants.MATCH_METHODS.PARTIAL, repeat: Constants.TRUE, separators: Constants.FALSE, sub: 'tramp' },
   };
 
+  // Extending: Sub classes should pass in additional config defaults
+  static _defaults = this.initializeDefaults(this._configDefaults) as Config;
+  static _persistableKeys = Object.keys(this._defaults); // Make sure _defaults has already been assigned before this
+
   constructor(data: Record<string, unknown> = {}) {
     Object.assign(this, Config._defaults, data);
+  }
+
+  get _persistableKeys(): string[] {
+    return (this.constructor as typeof Config)._persistableKeys;
   }
 
   addWord(str: string, options: WordOptions = this.defaultWordOptions()) {

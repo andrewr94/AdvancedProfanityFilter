@@ -22,7 +22,7 @@ export function dynamicList(list: string[], select: HTMLSelectElement, upperCase
 }
 
 export function exportToFile(dataStr, fileName = 'data.txt') {
-  const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+  const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
   const linkElement = document.createElement('a');
   linkElement.setAttribute('href', dataUri);
   linkElement.setAttribute('download', fileName);
@@ -51,52 +51,24 @@ export function formatNumber(number: number): string {
 // Returns the element found by selector string
 //   Supports querying through a shadow DOM using '>>>'
 export function getElement(selector: string, root: Document | ShadowRoot | HTMLElement = document): HTMLElement {
-  let element;
-  const selectors = selector.split('>>>');
-
-  // No shadowRoot in selector: return native querySelector
-  if (selectors.length == 1) {
-    return root.querySelector(selector);
-  }
-
-  // shadowRoot in selector: return querySelector through shadowRoot(s)
-  while (selectors.length) {
-    if (root) {
-      element = root.querySelector(selectors.shift().trim());
-
-      if (element) {
-        if (selectors.length == 0) {
-          return element;
-        } else {
-          root = element.shadowRoot;
-        }
-      } else {
-        return null;
-      }
-    } else {
-      return null;
-    }
-  }
+  return getElementCore(selector, root, 'querySelector') as HTMLElement;
 }
 
 // Returns the elements found by selector string
 //   Supports querying through a shadow DOM using '>>>'
-export function getElements(selector: string, root: Document | HTMLElement | ShadowRoot  = document): NodeListOf<HTMLElement> {
+function getElementCore(selector: string, root: Document | HTMLElement | ShadowRoot = document, queryMethod = 'querySelector'): HTMLElement | NodeListOf<HTMLElement> {
   let element;
-  const selectors = selector.split('>>>');
+  const domLayers = selector.split('>>>');
 
-  // No shadowRoot in selector: return native querySelectorAll
-  if (selectors.length == 1) {
-    return root.querySelectorAll(selector);
-  }
+  // No shadowRoot in selector: return native querySelector[All]
+  if (domLayers.length == 1) return root[queryMethod](selector);
 
-  // shadowRoot in selector: return querySelectorAll through shadowRoot(s)
-  while (selectors.length) {
+  // shadowRoot in selector: return querySelector[All] through shadowRoot(s)
+  while (domLayers.length) {
     if (root) {
-      const currentSelector = selectors.shift().trim();
-
-      if (selectors.length == 0) {
-        return root.querySelectorAll(currentSelector);
+      const currentSelector = domLayers.shift().trim();
+      if (domLayers.length == 0) {
+        return root[queryMethod](currentSelector);
       } else {
         element = root.querySelector(currentSelector);
         if (element) {
@@ -111,23 +83,10 @@ export function getElements(selector: string, root: Document | HTMLElement | Sha
   }
 }
 
-export function getGlobalVariable(code: string, id: string = 'APFData') {
-  const script = document.createElement('script');
-  script.id = id;
-  script.textContent = `document.getElementById("${id}").textContent = JSON.stringify(${code})`;
-  document.documentElement.appendChild(script);
-  const result = document.querySelector(`script#${id}`).textContent;
-  script.remove();
-  return JSON.parse(result);
-}
-
-export function getGlobalVariableFromBackground(globalVariable: string, source = 'context') {
-  return new Promise((resolve, reject) => {
-    const message: Message = { destination: 'background', globalVariable: globalVariable, source: source };
-    chrome.runtime.sendMessage(message, (response) => {
-      resolve(response);
-    });
-  });
+// Returns the elements found by selector string
+//   Supports querying through a shadow DOM using '>>>'
+export function getElements(selector: string, root: Document | HTMLElement | ShadowRoot = document): NodeListOf<HTMLElement> {
+  return getElementCore(selector, root, 'querySelectorAll') as NodeListOf<HTMLElement>;
 }
 
 export function getParent(node: HTMLElement, level: number = 1): HTMLElement {
@@ -179,6 +138,10 @@ export function isVersionOlder(version: Version, minimum: Version): boolean {
   }
 
   return false;
+}
+
+export function lastElement(array: any[]): any {
+  return array[array.length - 1];
 }
 
 export function makeBackgroundRequest(url: string, method: string, source = 'context') {
@@ -258,6 +221,14 @@ export function numberWithCommas(number: number | string): string {
 
 export function prettyPrintArray(array: string[]) {
   return `[${array.toString().replace(/,/g, ', ')}]`;
+}
+
+export function randomArrayElement(array: any[]): string {
+  const length = array.length;
+
+  if (length <= 1) return array[0];
+
+  return array[Math.floor(Math.random() * length)];
 }
 
 export function readFile(file) {
